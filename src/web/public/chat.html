@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>拾光书屋</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body class="chat-body">
+  <header class="topbar">
+    <div class="topbar-left">
+      <span id="persona-name" class="persona-name">…</span>
+      <span id="scene-chips" class="chips"></span>
+    </div>
+    <div class="topbar-right">
+      <select id="session-select" title="切换剧情"></select>
+      <button id="new-session" class="ghost">新剧情</button>
+      <button id="delete-session" class="ghost danger" title="删除当前剧情">删除</button>
+      <button id="logout" class="ghost">离开</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main id="messages" class="messages" aria-live="polite"></main>
+
+    <aside class="scene-panel">
+      <h2>当前场景</h2>
+      <dl id="scene-details"></dl>
+      <div class="affinity">
+        <div class="affinity-label">好感度 <span id="affinity-num">–</span></div>
+        <div class="affinity-bar"><div id="affinity-fill"></div></div>
+      </div>
+      <p id="scene-events" class="scene-events"></p>
+      <div id="tool-indicator" class="tool-indicator" hidden>⚙ 角色正在记录剧情…</div>
+    </aside>
+  </div>
+
+  <footer class="composer">
+    <textarea id="input" rows="2" placeholder="对她说些什么…（Enter 发送，Shift+Enter 换行）" maxlength="4000"></textarea>
+    <button id="send">发送</button>
+  </footer>
+
+  <!-- 新剧情弹窗：选择已有角色，或创建全新角色 -->
+  <div id="story-modal" class="modal-mask" hidden>
+    <div class="modal">
+      <div class="modal-head">
+        <h2>新剧情</h2>
+        <button id="modal-close" class="ghost">✕</button>
+      </div>
+
+      <section class="modal-section">
+        <h3>一、选择已有角色</h3>
+        <div class="modal-row">
+          <select id="persona-select"></select>
+          <button id="start-existing" class="primary">用这个角色开始</button>
+        </div>
+      </section>
+
+      <hr class="modal-hr">
+
+      <section class="modal-section">
+        <h3>二、或创建新角色</h3>
+        <p class="modal-tip">带 <b>*</b> 为必填。多行字段每行一条。</p>
+
+        <div class="tabs" role="tablist">
+          <button type="button" class="tab active" data-tab="tab-char" role="tab">扮演角色</button>
+          <button type="button" class="tab" data-tab="tab-player" role="tab">玩家角色</button>
+          <button type="button" class="tab" data-tab="tab-world" role="tab">世界观</button>
+        </div>
+
+        <!-- 扮演角色 -->
+        <div class="tab-pane" id="tab-char" role="tabpanel">
+          <div class="form-grid">
+            <label>角色名 *<input id="f-name" type="text" maxlength="32" required></label>
+            <label>身份 / 职业<input id="f-occupation" type="text" maxlength="120"></label>
+            <label>性别<input id="f-gender" type="text" maxlength="16"></label>
+            <label>年龄<input id="f-age" type="text" maxlength="16"></label>
+            <label class="span2">性格特征 *<textarea id="f-traits" rows="3" maxlength="1200" required></textarea></label>
+            <label class="span2">语言风格（语气基调）*<input id="f-tone" type="text" maxlength="200" required></label>
+            <label class="span2">行为边界（绝不做的事）*<textarea id="f-never" rows="3" maxlength="1200" required></textarea></label>
+            <label class="span2">与玩家的初始关系 *<textarea id="f-relation" rows="2" maxlength="300" required></textarea></label>
+          </div>
+          <button type="button" class="more-toggle" id="char-more-toggle">＋ 更多设定（外貌 / 价值观 / 台词等）</button>
+          <div class="form-grid" id="char-more" hidden>
+            <label class="span2">角色背景故事<textarea id="f-background" rows="2" maxlength="1000"></textarea></label>
+            <label>外貌<input id="f-appearance" type="text" maxlength="200"></label>
+            <label>价值观<input id="f-values" type="text" maxlength="300"></label>
+            <label>内心矛盾<input id="f-conflict" type="text" maxlength="300"></label>
+            <label>惯用词汇（逗号分隔）<input id="f-vocab" type="text" maxlength="300"></label>
+            <label>常用语气词（逗号分隔）<input id="f-interjections" type="text" maxlength="200"></label>
+            <label>句式习惯（每行一条）<textarea id="f-patterns" rows="2" maxlength="600"></textarea></label>
+            <label class="span2">台词范例（每行一条）<textarea id="f-samples" rows="2" maxlength="600"></textarea></label>
+            <label>回避的话题（每行一条）<textarea id="f-avoid" rows="1" maxlength="600"></textarea></label>
+            <label class="span2">关系背景故事<textarea id="f-relationship-go" rows="2" maxlength="1000"></textarea></label>
+          </div>
+        </div>
+
+        <!-- 玩家角色 -->
+        <div class="tab-pane" id="tab-player" role="tabpanel" hidden>
+          <p class="modal-tip">玩家由你本人扮演——这里只描述"你是谁"，让角色知道怎么与你相处。不需要语言风格。</p>
+          <div class="form-grid">
+            <label>称呼 / 名字<input id="p-name" type="text" maxlength="32"></label>
+            <label>身份 / 职业<input id="p-occupation" type="text" maxlength="120"></label>
+            <label>性别<input id="p-gender" type="text" maxlength="16"></label>
+            <label>年龄<input id="p-age" type="text" maxlength="16"></label>
+            <label class="span2">外貌<input id="p-appearance" type="text" maxlength="300"></label>
+            <label class="span2">性格特点（每行一条）<textarea id="p-traits" rows="3" maxlength="1200"></textarea></label>
+            <label class="span2">背景经历<textarea id="p-background" rows="2" maxlength="1000"></textarea></label>
+          </div>
+        </div>
+
+        <!-- 世界观 -->
+        <div class="tab-pane" id="tab-world" role="tabpanel" hidden>
+          <div class="form-grid">
+            <label class="span2">世界观背景<textarea id="w-setting" rows="4" maxlength="2000"></textarea></label>
+            <label>初始地点<input id="f-loc" type="text" maxlength="64"></label>
+            <label>初始时间<input id="f-time" type="text" maxlength="64"></label>
+            <label class="span2">初始情绪<input id="f-mood" type="text" maxlength="64"></label>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button id="create-persona" class="primary">创建角色并开始新剧情</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

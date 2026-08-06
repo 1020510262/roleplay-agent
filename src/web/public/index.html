@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>拾光 · 进入</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body class="login-body">
+  <main class="login-card">
+    <div class="login-mark">拾光</div>
+    <h1>角色扮演私享空间</h1>
+    <p class="login-sub">输入访问令牌以进入</p>
+    <form id="login-form">
+      <input id="token" type="password" name="token" placeholder="访问令牌" autocomplete="off" required>
+      <button type="submit">进入</button>
+    </form>
+    <p id="login-error" class="login-error" hidden>令牌不正确</p>
+  </main>
+  <script>
+    // Login page logic — plain script, no model output involved.
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const token = document.getElementById("token").value;
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+        credentials: "same-origin",
+      });
+      if (res.ok) {
+        location.href = "/chat.html";
+      } else {
+        document.getElementById("login-error").hidden = false;
+      }
+    });
+  </script>
+</body>
+</html>

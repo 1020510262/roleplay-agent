@@ -1,0 +1,24 @@
+{
+  "providers": {
+    "aliyun-maas": {
+      "baseUrl": "https://ws-3nehbnhvfim8236b.cn-beijing.maas.aliyuncs.com/compatible-mode/v1",
+      "api": "openai-completions",
+      "apiKey": "$ALIYUN_MAAS_API_KEY",
+      "compat": {
+        "supportsDeveloperRole": false,
+        "supportsReasoningEffort": false
+      },
+      "models": [
+        {
+          "id": "deepseek-v4-flash-0731",
+          "name": "DeepSeek V4 Flash (Aliyun MaaS)",
+          "reasoning": false,
+          "input": ["text"],
+          "contextWindow": 1000000,
+          "maxTokens": 8192,
+          "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
+        }
+      ]
+    }
+  }
+}
