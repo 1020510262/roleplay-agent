@@ -58,7 +58,7 @@ async function shutdown(sig: string): Promise<void> {
 	}
 }
 
-app.listen(config.app.port, () => {
+app.listen(config.app.port, "127.0.0.1", () => {
 	console.log(`[server] roleplay-agent on http://127.0.0.1:${config.app.port}`);
 	console.log(`[server] persona: ${config.app.defaultPersona} | check every ${config.app.checkEveryTurns} turns`);
 });
