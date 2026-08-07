@@ -1,0 +1,23 @@
+[Unit]
+Description=Roleplay Agent web application
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/roleplay-agent
+EnvironmentFile=/opt/roleplay-agent/.env
+ExecStart=/opt/node22/bin/node dist/web/server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/opt/roleplay-agent/data
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target
