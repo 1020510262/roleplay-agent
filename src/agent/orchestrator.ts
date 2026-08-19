@@ -95,6 +95,10 @@ class Orchestrator {
 		p.finally(() => this.pendingJobs.delete(p)).catch(() => {});
 	}
 
+	hasBusySessions(): boolean {
+		return [...this.handles.values()].some((handle) => handle.busy);
+	}
+
 	getPersona(id: string): PersonaDoc {
 		let p = this.personas.get(id);
 		if (!p) {
@@ -371,8 +375,10 @@ class Orchestrator {
 			await bumpSession(sessionId);
 
 			// 5) Separated background jobs — fire-and-forget, never block the reply.
-			this.backgroundJobs(sessionId, handle, userText, reply, turn).catch((err) =>
-				console.error("[background] jobs failed:", err.message),
+			this.trackJob(
+				this.backgroundJobs(sessionId, handle, userText, reply, turn).catch((err) =>
+					console.error("[background] jobs failed:", err.message),
+				),
 			);
 
 			return { reply, scene: handle.scene };

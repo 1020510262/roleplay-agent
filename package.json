@@ -13,7 +13,8 @@
     "smoke": "node test/smoke.mjs",
     "test:tools": "node test/tools.mjs",
     "test:security": "node test/security.mjs",
-    "test": "npm run test:tools && npm run test:security",
+    "test:models": "node test/models.mjs",
+    "test": "npm run test:tools && npm run test:security && npm run test:models",
     "init-db": "node scripts/init-db.mjs",
     "seed": "node scripts/seed-worldbook.mjs"
   },

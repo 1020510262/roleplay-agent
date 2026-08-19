@@ -63,6 +63,12 @@ src/
 - 默认角色由 `.env` 的 `DEFAULT_PERSONA` 指定；若该角色文件不存在，自动回退到第一个可用角色并告警。
 - 角色创建、会话创建均经服务端 schema 校验（`persona-io.ts` / `tool-validation.ts`），非法字段直接拒绝。
 
+## 模型切换
+
+登录后可在顶部模型下拉框切换当前模型，也可以点「＋模型」添加任意 OpenAI 兼容的 Chat Completions 服务。需要填写 API URL、API Key、模型 ID、显示名称、上下文长度和最大输出长度；当前 API 类型支持 `openai-completions`。
+
+新增和切换前都会发送一次最小测试请求。测试失败不会保存或切换，原模型和其他链路保持不变。自定义 API Key 仅保存在服务器的 `data/model-settings.json`（权限 `0600`），该文件及运行时模型目录均已加入 `.gitignore`，接口只返回 `hasApiKey`，不会回显密钥。模型切换是全局的，已有剧情会在下一次打开时使用新模型，数据库中的剧情、记忆与场景不会改变。
+
 ## 快速开始
 
 ```bash
@@ -83,6 +89,7 @@ npm run smoke                 # 阶段 1/2：SDK 最小 agent loop（CLI，不�
 node test/chat-cli.mjs --turns "你好"   # 阶段 3：全链路（DB+工具+抽取）
 node test/tools.mjs           # 工具参数校验（含恶意参数）
 node test/security.mjs        # 输入守卫 / XSS 转义 / SQL 注入安全
+node test/models.mjs          # 模型配置校验 / 连接成功与错误处理
 ```
 
 ## 安全设计

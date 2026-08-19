@@ -14,6 +14,7 @@ const sendBtn = $("send");
 let currentSession = null;
 let personaName = "角色";
 let busy = false;
+let activeModelId = null;
 
 async function api(path, opts = {}) {
 	const res = await fetch(path, {
@@ -120,6 +121,26 @@ async function loadSessions() {
 	}
 	if (currentSession) sel.value = currentSession;
 	return data.sessions;
+}
+
+function modelLabel(model) {
+	return `${model.name} · ${model.modelId}`;
+}
+
+async function loadModels() {
+	const res = await api("/api/models");
+	const data = await res.json();
+	const sel = $("model-select");
+	while (sel.firstChild) sel.removeChild(sel.firstChild);
+	for (const model of data.models ?? []) {
+		const opt = document.createElement("option");
+		opt.value = model.id;
+		opt.textContent = modelLabel(model);
+		sel.appendChild(opt);
+	}
+	activeModelId = data.activeId;
+	sel.value = activeModelId;
+	return data;
 }
 
 async function openSession(id, { scrollToEnd = true } = {}) {
@@ -421,6 +442,79 @@ $("session-select").addEventListener("change", async (e) => {
 	if (!busy && e.target.value) await openSession(e.target.value);
 });
 
+// ── 模型设置与全局切换 ───────────────────────────────────
+const modelModal = $("model-modal");
+
+function setModelStatus(message, isError = false) {
+	const el = $("model-status");
+	el.textContent = message;
+	el.classList.toggle("error", isError);
+}
+
+$("add-model").addEventListener("click", () => {
+	if (busy) return;
+	setModelStatus("");
+	modelModal.hidden = false;
+});
+$("model-modal-close").addEventListener("click", () => { modelModal.hidden = true; });
+modelModal.addEventListener("click", (e) => { if (e.target === modelModal) modelModal.hidden = true; });
+
+$("save-model").addEventListener("click", async () => {
+	const body = {
+		name: valOf("m-name"),
+		modelId: valOf("m-id"),
+		baseUrl: valOf("m-url"),
+		apiKey: valOf("m-key"),
+		api: valOf("m-api"),
+		contextWindow: Number(valOf("m-context")),
+		maxTokens: Number(valOf("m-max-tokens")),
+	};
+	const btn = $("save-model");
+	btn.disabled = true;
+	setModelStatus("正在测试模型连接…");
+	try {
+		const res = await api("/api/models", { method: "POST", body: JSON.stringify(body) });
+		const data = await res.json();
+		if (!res.ok) {
+			setModelStatus(data.modelConnectionFailed ? `模型无法联通：${data.error}` : data.error ?? "模型配置无效", true);
+			return;
+		}
+		$("m-key").value = "";
+		setModelStatus(`连接成功（${data.test.latencyMs} ms），模型已保存。`);
+		await loadModels();
+		setTimeout(() => { modelModal.hidden = true; }, 700);
+	} catch (err) {
+		setModelStatus(`网络错误：${err.message}`, true);
+	} finally {
+		btn.disabled = false;
+	}
+});
+
+$("model-select").addEventListener("change", async (e) => {
+	if (busy) {
+		e.target.value = activeModelId;
+		return;
+	}
+	const nextId = e.target.value;
+	e.target.disabled = true;
+	try {
+		const res = await api("/api/models/active", { method: "PUT", body: JSON.stringify({ id: nextId }) });
+		const data = await res.json();
+		if (!res.ok) {
+			alert(data.modelConnectionFailed ? `模型无法联通：${data.error}\n\n其他链路未受影响，请检查该模型服务。` : data.error ?? "切换模型失败");
+			e.target.value = activeModelId;
+			return;
+		}
+		activeModelId = data.model.id;
+		e.target.value = activeModelId;
+	} catch (err) {
+		alert(`切换模型失败：${err.message}`);
+		e.target.value = activeModelId;
+	} finally {
+		e.target.disabled = false;
+	}
+});
+
 $("logout").addEventListener("click", async () => {
 	await api("/api/logout", { method: "POST" }).catch(() => {});
 	location.href = "/";
@@ -430,6 +524,7 @@ $("logout").addEventListener("click", async () => {
 	try {
 		const res = await api("/api/me");
 		const me = await res.json();
+		await loadModels();
 		personaName = me.displayName ?? me.defaultPersona ?? "角色";
 		document.title = personaName;
 		$("persona-name").textContent = personaName;

@@ -7,6 +7,15 @@ import { orchestrator, type StreamEvent } from "../agent/orchestrator.js";
 import { config } from "../config.js";
 import { destroySession, issueSession, tokenValid } from "../security/auth.js";
 import { InputRejected } from "../security/input-guard.js";
+import {
+	getModelProfile,
+	listModelProfiles,
+	ModelConnectionError,
+	saveModelProfile,
+	setActiveModelProfile,
+	testModelConnection,
+} from "../agent/model-settings.js";
+import { resetModelRuntime } from "../agent/runtime.js";
 
 /** Public routes (login only). */
 export const publicApi = Router();
@@ -37,6 +46,47 @@ api.get("/me", (_req: Request, res: Response) => {
 		personas: orchestrator.listPersonaSummaries(),
 		checkEveryTurns: config.app.checkEveryTurns,
 	});
+});
+
+// ── model settings ──────────────────────────────────────────────────────
+api.get("/models", (_req: Request, res: Response) => {
+	res.setHeader("Cache-Control", "no-store");
+	res.json(listModelProfiles());
+});
+
+api.post("/models", async (req: Request, res: Response) => {
+	try {
+		const test = await testModelConnection(req.body);
+		const model = saveModelProfile(req.body);
+		res.status(201).json({ model, test });
+	} catch (err) {
+		const status = err instanceof ModelConnectionError ? 502 : 400;
+		res.status(status).json({ error: (err as Error).message, modelConnectionFailed: err instanceof ModelConnectionError });
+	}
+});
+
+api.put("/models/active", async (req: Request, res: Response) => {
+	try {
+		if (orchestrator.hasBusySessions()) {
+			res.status(409).json({ error: "当前仍有对话正在生成，请等待完成后再切换模型" });
+			return;
+		}
+		const id = typeof req.body?.id === "string" ? req.body.id : "";
+		const profile = getModelProfile(id);
+		const test = await testModelConnection(profile);
+		if (orchestrator.hasBusySessions()) {
+			res.status(409).json({ error: "测试期间有新对话开始，请等待完成后重试切换" });
+			return;
+		}
+		await orchestrator.settle();
+		orchestrator.disposeAll();
+		const model = setActiveModelProfile(id);
+		resetModelRuntime();
+		res.json({ model, test });
+	} catch (err) {
+		const status = err instanceof ModelConnectionError ? 502 : 400;
+		res.status(status).json({ error: (err as Error).message, modelConnectionFailed: err instanceof ModelConnectionError });
+	}
 });
 
 // ── personas ─────────────────────────────────────────────────────────────

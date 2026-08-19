@@ -3,24 +3,40 @@ import { ModelRuntime } from "@earendil-works/pi-coding-agent";
 import fs from "node:fs";
 import path from "node:path";
 import { config } from "../config.js";
+import { getActiveModelProfile } from "./model-settings.js";
 
 let runtimePromise: Promise<ModelRuntime> | undefined;
 
-/**
- * Shared ModelRuntime instance. Loads our custom provider catalog from
- * data/models.json (Aliyun MaaS / DeepSeek). Auth comes from the
- * $ALIYUN_MAAS_API_KEY env interpolation in models.json; we also set it as a
- * runtime override so .env stays the single source of truth.
- */
+/** Shared runtime generated from the currently active built-in/custom profile. */
 export async function getModelRuntime(): Promise<ModelRuntime> {
 	if (!runtimePromise) {
 		runtimePromise = (async () => {
+			const active = getActiveModelProfile();
 			fs.mkdirSync(path.dirname(config.paths.authJson), { recursive: true });
+			const catalog = {
+				providers: {
+					[active.providerId]: {
+						...(active.baseUrl ? { baseUrl: active.baseUrl } : {}),
+						api: active.api,
+						compat: { supportsDeveloperRole: false, supportsReasoningEffort: false },
+						models: [{
+							id: active.modelId,
+							name: active.name,
+							reasoning: false,
+							input: ["text"],
+							contextWindow: active.contextWindow,
+							maxTokens: active.maxTokens,
+							cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+						}],
+					},
+				},
+			};
+			fs.writeFileSync(config.paths.runtimeModelsJson, `${JSON.stringify(catalog, null, 2)}\n`, { mode: 0o600 });
 			const rt = await ModelRuntime.create({
 				authPath: config.paths.authJson,
-				modelsPath: config.paths.modelsJson,
+				modelsPath: config.paths.runtimeModelsJson,
 			});
-			await rt.setRuntimeApiKey(config.model.provider, config.model.apiKey);
+			await rt.setRuntimeApiKey(active.providerId, active.apiKey);
 			return rt;
 		})();
 	}
@@ -30,9 +46,10 @@ export async function getModelRuntime(): Promise<ModelRuntime> {
 /** Resolve the main conversation model. */
 export async function getMainModel(): Promise<Model<Api>> {
 	const rt = await getModelRuntime();
-	const model = rt.getModel(config.model.provider, config.model.id);
+	const active = getActiveModelProfile();
+	const model = rt.getModel(active.providerId, active.modelId);
 	if (!model) {
-		throw new Error(`Model not found: ${config.model.provider}/${config.model.id}`);
+		throw new Error(`Model not found: ${active.providerId}/${active.modelId}`);
 	}
 	return model as Model<Api>;
 }
@@ -40,11 +57,17 @@ export async function getMainModel(): Promise<Model<Api>> {
 /** Resolve the utility model used for separated background calls. */
 export async function getUtilityModel(): Promise<Model<Api>> {
 	const rt = await getModelRuntime();
-	const model = rt.getModel(config.model.utilityProvider, config.model.utilityId);
+	const active = getActiveModelProfile();
+	const model = rt.getModel(active.providerId, active.modelId);
 	if (!model) {
-		throw new Error(`Utility model not found: ${config.model.utilityProvider}/${config.model.utilityId}`);
+		throw new Error(`Utility model not found: ${active.providerId}/${active.modelId}`);
 	}
 	return model as Model<Api>;
+}
+
+/** Drop the cached runtime after a model switch. Existing sessions must be disposed first. */
+export function resetModelRuntime(): void {
+	runtimePromise = undefined;
 }
 
 /**
