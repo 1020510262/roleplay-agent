@@ -2,6 +2,8 @@ node_modules/
 dist/
 data/auth.json
 data/models-store.json
+data/models-runtime.json
+data/model-settings.json
 data/sessions/
 data/pi-home/
 # 用户创建的角色（仅保留默认种子人设 lin-wanqing.yaml）
@@ -9,3 +11,5 @@ data/personas/rp-*.yaml
 .env
 *.log
 .npmrc
+.DS_Store
+text.txt

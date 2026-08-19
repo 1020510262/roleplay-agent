@@ -103,7 +103,8 @@ body {
 	max-width: 46vw;
 }
 .topbar-right { display: flex; gap: 8px; align-items: center; }
-.topbar-right select {
+.topbar-right select,
+.model-modal-card select {
 	background: #120f0b;
 	color: var(--text);
 	border: 1px solid #3a3020;
@@ -111,6 +112,7 @@ body {
 	padding: 6px 8px;
 	max-width: 220px;
 }
+#model-select { max-width: 240px; }
 button.ghost {
 	background: transparent;
 	border: 1px solid #4a3d2a;
@@ -347,6 +349,9 @@ button.ghost.danger:hover { color: #e07a5f; border-color: #8a4b3a; }
 .form-grid input:focus,
 .form-grid textarea:focus { border-color: var(--amber-soft); }
 .modal-actions { margin-top: 16px; text-align: right; }
+.model-modal-card { width: min(620px, 94vw); }
+.model-status { min-height: 20px; margin: 14px 0 0; color: #91c788; font-size: 13px; }
+.model-status.error { color: #e07a5f; }
 button.primary {
 	background: var(--amber);
 	border: none;

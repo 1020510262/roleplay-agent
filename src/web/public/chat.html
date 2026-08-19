@@ -14,6 +14,8 @@
     </div>
     <div class="topbar-right">
       <select id="session-select" title="切换剧情"></select>
+      <select id="model-select" title="切换模型" aria-label="切换模型"></select>
+      <button id="add-model" class="ghost" title="添加 OpenAI 兼容模型">＋模型</button>
       <button id="new-session" class="ghost">新剧情</button>
       <button id="delete-session" class="ghost danger" title="删除当前剧情">删除</button>
       <button id="logout" class="ghost">离开</button>
@@ -123,6 +125,32 @@
           <button id="create-persona" class="primary">创建角色并开始新剧情</button>
         </div>
       </section>
+    </div>
+  </div>
+
+  <!-- 模型设置弹窗：密钥只发送给服务端，永不回显 -->
+  <div id="model-modal" class="modal-mask" hidden>
+    <div class="modal model-modal-card">
+      <div class="modal-head">
+        <h2>添加 OpenAI 兼容模型</h2>
+        <button id="model-modal-close" class="ghost">✕</button>
+      </div>
+      <p class="modal-tip">保存前会发起一次最小 Chat Completions 请求。API Key 仅存于服务器私有配置文件，不会回显。</p>
+      <div class="form-grid">
+        <label>显示名称 *<input id="m-name" type="text" maxlength="80" placeholder="例如：GPT-4.1"></label>
+        <label>模型 ID *<input id="m-id" type="text" maxlength="200" placeholder="例如：gpt-4.1"></label>
+        <label class="span2">API URL *<input id="m-url" type="url" maxlength="500" placeholder="https://example.com/v1"></label>
+        <label class="span2">API Key *<input id="m-key" type="password" maxlength="1000" autocomplete="new-password"></label>
+        <label>API 类型
+          <select id="m-api"><option value="openai-completions">openai-completions</option></select>
+        </label>
+        <label>上下文长度 *<input id="m-context" type="number" min="1024" max="10000000" step="1" value="128000"></label>
+        <label>最大输出长度<input id="m-max-tokens" type="number" min="1" max="10000000" step="1" value="8192"></label>
+      </div>
+      <p id="model-status" class="model-status" aria-live="polite"></p>
+      <div class="modal-actions">
+        <button id="save-model" class="primary">测试并保存</button>
+      </div>
     </div>
   </div>
 

@@ -57,6 +57,8 @@ export const config = {
 		personasDir: path.join(DATA_DIR, "personas"),
 		sessionsDir: path.join(DATA_DIR, "sessions"),
 		modelsJson: path.join(DATA_DIR, "models.json"),
+		runtimeModelsJson: path.join(DATA_DIR, "models-runtime.json"),
+		modelSettingsJson: path.join(DATA_DIR, "model-settings.json"),
 		authJson: path.join(DATA_DIR, "auth.json"),
 	},
 } as const;
